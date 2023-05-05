@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+     /*General canvas style, feel free to copy*/
+     html, body {
+         overflow: hidden;
+         width: 100%;
+         height: 100%;
+         margin: 0;
+         padding: 0;
+     }
+
+     #container {
+         position: relative;
+         width: 100%;
+         height: 100%;
+     }
+     #renderCanvas {
+         touch-action: none;
+     }
+
+     #ui {
+         bottom: 0;
+         left: 0;
+         position: absolute;
+         width: 100%;
+         height: 100%;
+     }
+
+     /*Demo specific style*/
+     button {
+         background-color: #A3B5A2;
+         color: #313654;
+     }
+     #ui {
+         display: flex;
+         justify-content: right;
+     }
+    </style>
+    <script type="module" src="index.js"></script>
+</head>
+<body>
+    <div id="container">
+        <canvas id="renderCanvas"></canvas>
+        <div id="ui">
+            <ul>
+                <li><button>Haha button go brr</button></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
