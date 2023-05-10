@@ -1,6 +1,8 @@
-import { Renderer, Camera, Transform, Orbit, Program, Mesh,
+import { Renderer, Camera, Transform, Orbit, Program, Mesh, Sphere,
          GLTFLoader, BasisManager, Texture, Box, Raycast, Vec2, Vec3 } from './ogl/src/index.mjs';
 import {SkyBox} from './skybox.js';
+import {MessageBus} from './abstract.js';
+import {EditMode} from './editmode.js';
 
 function shallowClone(obj) {
     return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
@@ -10,22 +12,30 @@ function init() {
     const canvasElem = document.querySelector("#renderCanvas");
     const renderer = new Renderer({ dpr: 1, canvas: canvasElem });
     const gl = renderer.gl;
-    console.log(canvasElem);
 
+    const msgBus = new MessageBus();
+
+    let view = new Vec3(0, 0, 0);
     const program = new Program(gl, {
         vertex: /* glsl */ `#version 300 es
             in vec3 position;
             in vec4 color;
+            in vec3 normal;
+            uniform vec3 view;
             //in vec2 uv;
 
             uniform mat4 modelViewMatrix;
             uniform mat4 projectionMatrix;
             //out vec2 v_uv;
             out vec4 vColor;
+            out vec3 vNormal;
+            out vec3 vView;
 
             void main() {
+                vView = normalize(view);
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 vColor = color;
+                vNormal = normal;
                 //v_uv = uv;
             }
         `,
@@ -33,19 +43,30 @@ function init() {
             precision highp float;
             //in vec2 v_uv;
             in vec4 vColor;
+            in vec3 vNormal;
+            in vec3 vView;
             out vec4 outColor;
             //uniform sampler2D tBaseColor;
             void main() {
+                vec3 light = vec3(0, 1, 0);
+                vec3 normal = normalize(vNormal);
+                float t = (dot(normal, light) + 1.0) / 2.0;
+                vec3 r = 2.0 * dot(normal, light) * normal - light;
+                float s = clamp(100.0 * dot(r, vView) - 97.0, 0.0, 1.0);
+
+                vec3 cool = vec3(0.2, 0.2, 0.6) * t + t * vColor.xyz;
+                vec3 warm = vec3(0.3, 0.3, 0.0) + 0.25 * vColor.xyz;
+                vec3 highlight = vec3(1.0, 1.0, 1.0);
+                vec3 shaded = vec3(1.0, 1.0, 1.0) * s + cool * (1.0 - s);
                 //outColor = texture(tBaseColor, v_uv);
-                outColor = vColor;
+                outColor = vec4(shaded, 1.0);
             }
         `,
-        //uniforms: {tBaseColor:
-        //           {value: material.baseColorTexture ? material.baseColorTexture.texture : emptyTex}
-        //          },
+        uniforms: {view: view},
     });
     const emptyTex = new Texture(gl);
     const camera = new Camera(gl, { near: 0.1, far: 10000 });
+
 
     function resize() {
         //renderer.setSize(window.innerWidth, window.innerHeight);
@@ -55,10 +76,8 @@ function init() {
     window.addEventListener('resize', resize, false);
     resize();
 
-    const controls = new Orbit(camera);
-
-    const objects = {};
-    const assets = [];
+    const controls = new Orbit(camera, {element: canvasElem});
+    const assets = {};
 
     camera.position
           .set(0, 0.5, -1)
@@ -67,35 +86,25 @@ function init() {
           .add([5, 5, -5]);
     controls.target.copy([0, 2, 2]);
     controls.forcePosition();
-
     const scene = new Transform();
-
-    const mouse = new Vec2();
     const raycast = new Raycast(gl);
-    const plane = {origin: new Vec3(0, 0, 0),
-                   normal: new Vec3(0, 1, 0)};
-    document.addEventListener('pointerdown', down, false);
-    function down(e) {
-        // calculates clipspace coords of pointer
-        mouse.set(2.0 * (e.x / renderer.width) - 1.0, 2.0 * (1.0 - e.y / renderer.height) - 1.0);
-        raycast.castMouse(camera, mouse);
-        const intersection = raycast.intersectPlane(plane);
-        const newBarrel = new Mesh(gl, assets[Math.floor(Math.random() * assets.length)]);
-        //newBarrel.program = shallowClone(program);
-        newBarrel.setParent(scene);
-        newBarrel.position = intersection.clone();
-
-    }
+    const editMode = new EditMode({gl: gl,
+                                   msgBus: msgBus,
+                                   canvas: canvasElem,
+                                   assets: assets,
+                                   raycast: raycast,
+                                   scene: scene,
+                                   camera: camera,
+                                   renderer: renderer});
 
     loadAssets();
     async function loadAssets() {
-        // GLTFLoader.setBasisManager(new BasisManager(`ogl/examples/assets/libs/basis/BasisWorker.js`));
         const gltf = await GLTFLoader.load(gl, `assets.glb`);
         console.log(gltf);
         const s = gltf.scene || gltf.scenes[0];
         s.forEach((root) => {
             root.traverse((node) => {
-                if (node.geometry && node.extras.asset_id) {assets.push(node)}
+                if (node.geometry && node.extras.asset_id) {assets[node.extras.asset_id] = node}
                 if (node.program) {
                     const material = node.program.gltfMaterial || {};
                     node.program = program;
@@ -124,12 +133,16 @@ function init() {
 
         const skybox = new SkyBox(gl, images);
         skybox.setParent(scene);
+        msgBus.send("onAssetsLoaded");
     }
 
     requestAnimationFrame(update);
     function update() {
         requestAnimationFrame(update);
         controls.update();
+        view.set(0, 0, 1);
+        view.applyQuaternion(camera.quaternion);
+        program.uniforms.view.value = view;
         renderer.render({ scene, camera, sort: false, frustumCull: false });
     }
 }
