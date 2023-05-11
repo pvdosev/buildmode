@@ -112,24 +112,24 @@ function init() {
             });
         });
 
-        function loadImage(src) {
-            return new Promise((res) => {
-                const img = new Image();
-                img.onload = () => res(img);
-                img.src = src;
-            });
-        }
+        // function loadImage(src) {
+        //     return new Promise((res) => {
+        //         const img = new Image();
+        //         img.onload = () => res(img);
+        //         img.src = src;
+        //     });
+        // }
 
-        const images = await Promise.all([
-            loadImage('skybox/posx.jpg'),
-            loadImage('skybox/negx.jpg'),
-            loadImage('skybox/posy.jpg'),
-            loadImage('skybox/negy.jpg'),
-            loadImage('skybox/posz.jpg'),
-            loadImage('skybox/negz.jpg'),
-        ]);
+        // const images = await Promise.all([
+        //     loadImage('skybox/posx.jpg'),
+        //     loadImage('skybox/negx.jpg'),
+        //     loadImage('skybox/posy.jpg'),
+        //     loadImage('skybox/negy.jpg'),
+        //     loadImage('skybox/posz.jpg'),
+        //     loadImage('skybox/negz.jpg'),
+        // ]);
 
-        const skybox = new SkyBox(gl, images);
+        const skybox = new SkyBox(gl);
         skybox.setParent(scene);
         msgBus.send("onAssetsLoaded");
     }
