@@ -88,9 +88,7 @@ function init() {
     controls.forcePosition();
     const scene = new Transform();
     const raycast = new Raycast(gl);
-    const editMode = new EditMode({gl: gl,
-                                   msgBus: msgBus,
-                                   canvas: canvasElem,
+    const editMode = new EditMode({msgBus: msgBus,
                                    assets: assets,
                                    raycast: raycast,
                                    scene: scene,
