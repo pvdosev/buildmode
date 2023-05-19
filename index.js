@@ -3,6 +3,7 @@ import { Renderer, Camera, Transform, Orbit, Program, Mesh, Sphere,
 import {SkyBox} from './skybox.js';
 import {MessageBus} from './abstract.js';
 import {EditMode} from './editmode.js';
+import {Terrain} from './terrain.js';
 
 function shallowClone(obj) {
     return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
@@ -12,6 +13,22 @@ function init() {
     const canvasElem = document.querySelector("#renderCanvas");
     const renderer = new Renderer({ dpr: 1, canvas: canvasElem });
     const gl = renderer.gl;
+    const camera = new Camera(gl, { near: 0.1, far: 10000 });
+    function resize() {
+        renderer.setSize(canvasElem.parentNode.clientWidth, canvasElem.parentNode.clientHeight);
+        camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+    }
+    window.addEventListener('resize', resize, false);
+    resize();
+
+    const controls = new Orbit(camera, {element: canvasElem});
+    camera.position
+          .set(0, 0.5, -1)
+          .normalize()
+          .multiply(2.5)
+          .add([5, 5, -5]);
+    controls.target.copy([0, 2, 2]);
+    controls.forcePosition();
 
     const msgBus = new MessageBus();
 
@@ -64,30 +81,10 @@ function init() {
         `,
         uniforms: {view: view},
     });
-    const emptyTex = new Texture(gl);
-    const camera = new Camera(gl, { near: 0.1, far: 10000 });
-
-
-    function resize() {
-        //renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setSize(canvasElem.parentNode.clientWidth, canvasElem.parentNode.clientHeight);
-        camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
-    }
-    window.addEventListener('resize', resize, false);
-    resize();
-
-    const controls = new Orbit(camera, {element: canvasElem});
     const assets = {};
-
-    camera.position
-          .set(0, 0.5, -1)
-          .normalize()
-          .multiply(2.5)
-          .add([5, 5, -5]);
-    controls.target.copy([0, 2, 2]);
-    controls.forcePosition();
     const scene = new Transform();
     const raycast = new Raycast(gl);
+    const terrain = new Terrain(gl, scene, canvasElem, raycast, renderer, camera);
     const editMode = new EditMode({msgBus: msgBus,
                                    assets: assets,
                                    raycast: raycast,
@@ -106,28 +103,9 @@ function init() {
                 if (node.program) {
                     const material = node.program.gltfMaterial || {};
                     node.program = program;
-                    // node.program.uniforms =
-                    //  {tBaseColor: {value: material.baseColorTexture ? material.baseColorTexture.texture : emptyTex}};
                 }
             });
         });
-
-        // function loadImage(src) {
-        //     return new Promise((res) => {
-        //         const img = new Image();
-        //         img.onload = () => res(img);
-        //         img.src = src;
-        //     });
-        // }
-
-        // const images = await Promise.all([
-        //     loadImage('skybox/posx.jpg'),
-        //     loadImage('skybox/negx.jpg'),
-        //     loadImage('skybox/posy.jpg'),
-        //     loadImage('skybox/negy.jpg'),
-        //     loadImage('skybox/posz.jpg'),
-        //     loadImage('skybox/negz.jpg'),
-        // ]);
 
         const skybox = new SkyBox(gl);
         skybox.setParent(scene);

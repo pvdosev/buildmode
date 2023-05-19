@@ -1,4 +1,4 @@
-import { Vec2, Vec3, Mesh } from './ogl/src/index.mjs';
+import { Vec2, Vec3, Mesh, GridHelper } from './ogl/src/index.mjs';
 import {makeButtonInList} from './ui.js';
 
 const STATE = {EDIT: 0, GRAB: 1, DISABLED: 2}
@@ -24,6 +24,8 @@ export class EditMode {
     this.mouse = new Vec2();
     this.objectList = [];
     this.msgBus.register("onAssetsLoaded", () => {this.setupAssets()});
+    this.gridHelper = new GridHelper(this.gl);
+    this.gridHelper.setParent(this.scene);
     this.registerCallbacks();
   }
   setupAssets() {
