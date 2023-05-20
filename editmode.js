@@ -1,7 +1,7 @@
 import { Vec2, Vec3, Mesh, GridHelper } from './ogl/src/index.mjs';
 import {makeButtonInList} from './ui.js';
 
-const STATE = {EDIT: 0, GRAB: 1, DISABLED: 2}
+const STATE = {EDIT: 0, GRAB: 1, TERRAIN_EDIT: 2, DISABLED: -1}
 const PLANE = {origin: new Vec3(0, 0, 0), normal: new Vec3(0, 1, 0)}
 
 export class EditMode {
@@ -10,17 +10,19 @@ export class EditMode {
                raycast = raycast,
                scene = scene,
                camera = camera,
-               renderer = renderer}) {
+               renderer = renderer},
+              terrain) {
     this.state = STATE.EDIT;
     this.heldObject = null;
     this.gl = renderer.gl;
     this.canvas = this.gl.canvas;
     this.msgBus = msgBus;
-    this.assets = assets;
+    this.assets = assets.items;
     this.raycast = raycast;
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
+    this.terrain = terrain;
     this.mouse = new Vec2();
     this.objectList = [];
     this.msgBus.register("onAssetsLoaded", () => {this.setupAssets()});
@@ -55,6 +57,7 @@ export class EditMode {
         // calculates clipspace coords of pointer
         const intersection = this.raycast.intersectPlane(PLANE);
         if (intersection) {
+          console.log(intersection);
           this.heldObject.position = intersection.clone();
         }
         this.state = STATE.EDIT;

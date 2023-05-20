@@ -14,6 +14,7 @@ function init() {
     const renderer = new Renderer({ dpr: 1, canvas: canvasElem });
     const gl = renderer.gl;
     const camera = new Camera(gl, { near: 0.1, far: 10000 });
+
     function resize() {
         renderer.setSize(canvasElem.parentNode.clientWidth, canvasElem.parentNode.clientHeight);
         camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
@@ -29,6 +30,11 @@ function init() {
           .add([5, 5, -5]);
     controls.target.copy([0, 2, 2]);
     controls.forcePosition();
+
+    const assets = {items: {}, walls: {}};
+    const scene = new Transform();
+    const raycast = new Raycast(gl);
+    loadAssets();
 
     const msgBus = new MessageBus();
 
@@ -81,25 +87,19 @@ function init() {
         `,
         uniforms: {view: view},
     });
-    const assets = {};
-    const scene = new Transform();
-    const raycast = new Raycast(gl);
-    const terrain = new Terrain(gl, scene, canvasElem, raycast, renderer, camera);
-    const editMode = new EditMode({msgBus: msgBus,
-                                   assets: assets,
-                                   raycast: raycast,
-                                   scene: scene,
-                                   camera: camera,
-                                   renderer: renderer});
+    const context = {gl: gl, scene: scene, canvas: canvasElem, raycast: raycast,
+                     renderer: renderer, camera: camera, assets: assets, msgBus: msgBus};
+    const terrain = new Terrain(context);
+    const editMode = new EditMode(context, terrain);
 
-    loadAssets();
     async function loadAssets() {
         const gltf = await GLTFLoader.load(gl, `assets.glb`);
         console.log(gltf);
         const s = gltf.scene || gltf.scenes[0];
         s.forEach((root) => {
             root.traverse((node) => {
-                if (node.geometry && node.extras.asset_id) {assets[node.extras.asset_id] = node}
+                if (node.geometry && node.extras.asset_id) {assets.items[node.extras.asset_id] = node}
+                if (node.extras.wall_id) {assets.walls[node.extras.wall_id] = node}
                 if (node.program) {
                     const material = node.program.gltfMaterial || {};
                     node.program = program;
