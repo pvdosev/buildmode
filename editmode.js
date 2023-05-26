@@ -46,6 +46,13 @@ export class EditMode {
         this.state = STATE.EDIT;
       }
     });
+    makeButtonInList("Edit Terrain", "buttonList", () => {
+      if (this.heldObject) {
+        this.heldObject.setParent(null);
+        this.heldObject = undefined;
+      }
+      this.state = STATE.TERRAIN_EDIT;
+    });
   }
 
   pointerDown(e) {
@@ -55,12 +62,25 @@ export class EditMode {
         break;
       case STATE.EDIT:
         this.heldObjectGrab(e);
+        break;
+      case STATE.TERRAIN_EDIT:
+        this.terrainDestroy(e);
+        break;
     }
   }
 
   pointerMove(e) {
     if ( this.state == STATE.GRAB ) {
       this.heldObjectUpdate(e);
+    }
+  }
+
+  terrainDestroy(e) {
+    const hits = this.raycast.intersectBounds(e, this.camera, this.terrain.grid);
+    console.log(hits[0]);
+    if (hits[0]) {
+      hits[0].filled = false;
+      this.terrain.updateCellNeighbors(hits[0].x, hits[0].y);
     }
   }
 

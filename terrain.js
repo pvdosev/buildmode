@@ -7,6 +7,8 @@ function calcGridToWorld(x, y, z) {
   return [x - 4.5, y, z - 4.5];
 }
 
+const NEIGHBORS = [[0, 1, 0], [0, -1, Math.PI], [1, 0, 0.5 * Math.PI], [-1, 0, 1.5 * Math.PI]];
+
 export class Terrain {
   constructor({scene = scene, renderer = renderer, msgBus = msgBus}) {
     msgBus.register("onAssetsLoaded", (assets)=>{this.setupWalls(assets)});
@@ -39,9 +41,11 @@ export class Terrain {
     this.origin = new Transform();
     for (let y = 0; y < 10; y++) {
       for (let x = 0; x < 10; x++) {
-        this.grid.push({walls: [], filled: true, bounds: {
-          min: calcGridToWorld(x - 0.5, 0, y - 0.5),
-          max: calcGridToWorld(x + 0.5, 2, y + 0.5),
+        const min = calcGridToWorld(x - 0.5, 0, y - 0.5);
+        const max = calcGridToWorld(x + 0.5, 2, y + 0.5);
+        this.grid.push({walls: [], filled: true, x: x, y: y, bounds: {
+          min: {x: min[0], y: min[1], z: min[2]},
+          max: {x: max[0], y: max[1], z: max[2]},
         }});
       }
     }
@@ -68,8 +72,15 @@ export class Terrain {
       }
     }
   }
+  updateCellNeighbors (x, y) {
+    this.updateCell(x, y);
+    for (const direction of NEIGHBORS) {
+      this.updateCell(x + direction[0], y + direction[1]);
+    }
+  }
   updateCell(x, y) {
     const cell = this.grid[calcOffset(x, y)];
+    if (!cell) return;
     if (cell.walls.length > 0) {
       for (const wall of cell.walls) {
         wall.setParent(null);
@@ -77,8 +88,7 @@ export class Terrain {
       cell.walls = [];
     }
     if (cell.filled) return;
-    const neighbors = [[0, 1, 0], [0, -1, Math.PI], [1, 0, 0.5 * Math.PI], [-1, 0, 1.5 * Math.PI]];
-    for (const direction of neighbors) {
+    for (const direction of NEIGHBORS) {
       const neighbor = this.grid[calcOffset(x + direction[0], y + direction[1])];
       if (neighbor == undefined || neighbor?.filled) {
         const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});

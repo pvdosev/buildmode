@@ -1,4 +1,4 @@
-import {Raycast} from './ogl/src/index.mjs';
+import {Vec3, Raycast} from './ogl/src/index.mjs';
 
 // Ahh making this in the first place is bad
 // it's an ugly compromise with the graphics library
@@ -24,5 +24,18 @@ export class RaycastHelper {
   intersectMeshes(e, camera, objList, options) {
     this.castMouseRay(e, camera);
     return this.raycast.intersectMeshes(objList, options);
+  }
+  intersectBounds(e, camera, cellList) {
+    this.castMouseRay(e, camera);
+    const hits = [];
+
+    cellList.forEach((cell) => {
+      cell.hitDistance = this.raycast.intersectBox(cell.bounds);
+      if (!cell.hitDistance) return;
+      hits.push(cell);
+    });
+
+    hits.sort((a, b) => a.hitDistance - b.hitDistance);
+    return hits;
   }
 }
