@@ -1,8 +1,9 @@
 import {Vec3, Raycast} from './ogl/src/index.mjs';
 
-// Ahh making this in the first place is bad
-// it's an ugly compromise with the graphics library
-// move this there eventually?
+// ogl has a raycast class, but using it directly is annoying
+// since it's written not to know about the gl context and canvas
+// but we need that information to do the actual raycasting (see castMouseRay)
+// so this is a kinda ugly compromise
 
 export class RaycastHelper {
   constructor(renderer) {
@@ -26,14 +27,14 @@ export class RaycastHelper {
     return this.raycast.intersectMeshes(objList, options);
   }
   intersectBounds(e, camera, cellList) {
+    // probably breaks if boxes aren't axis aligned
     this.castMouseRay(e, camera);
     const hits = [];
 
-    cellList.forEach((cell) => {
+    for (const cell of cellList) {
       cell.hitDistance = this.raycast.intersectBox(cell.bounds);
-      if (!cell.hitDistance) return;
-      hits.push(cell);
-    });
+      if (cell.hitDistance) hits.push(cell);
+    }
 
     hits.sort((a, b) => a.hitDistance - b.hitDistance);
     return hits;

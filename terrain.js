@@ -49,13 +49,6 @@ export class Terrain {
         }});
       }
     }
-    this.grid[37].filled = false;
-    this.grid[93].filled = false;
-    this.grid[0].filled = false;
-    this.grid[1].filled = false;
-    this.grid[2].filled = false;
-    this.grid[11].filled = false;
-    this.grid[12].filled = false;
     this.origin.setParent(scene);
   }
   pointerDown(e) {
@@ -97,6 +90,7 @@ export class Terrain {
         newWall.position = calcGridToWorld(x + (direction[0] / 2), 0, y + (direction[1] / 2));
         newWall.rotation.y = direction[2];
         newWall.setParent(this.scene);
+        cell.walls.push(newWall);
       }
     }
   }

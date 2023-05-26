@@ -77,7 +77,6 @@ export class EditMode {
 
   terrainDestroy(e) {
     const hits = this.raycast.intersectBounds(e, this.camera, this.terrain.grid);
-    console.log(hits[0]);
     if (hits[0]) {
       hits[0].filled = false;
       this.terrain.updateCellNeighbors(hits[0].x, hits[0].y);
