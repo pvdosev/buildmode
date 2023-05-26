@@ -8,15 +8,11 @@ function calcGridToWorld(x, y, z) {
 }
 
 export class Terrain {
-  constructor({gl = gl, scene = scene, canvas = canvas, raycast = raycast,
-               renderer = renderer, camera = camera, assets = assets, msgBus = msgBus}) {
-    msgBus.register("onAssetsLoaded", ()=>{this.setupWalls()});
-    this.walls = assets.walls;
-    this.renderer = renderer;
-    this.camera = camera;
-    this.gl = gl;
+  constructor({scene = scene, renderer = renderer, msgBus = msgBus}) {
+    msgBus.register("onAssetsLoaded", (assets)=>{this.setupWalls(assets)});
+    this.gl = renderer.gl;
     this.scene = scene;
-    this.program = new Program(gl, {
+    this.program = new Program(this.gl, {
       vertex: /* glsl */ `#version 300 es
             in vec3 position;
             in vec3 normal;
@@ -57,10 +53,6 @@ export class Terrain {
     this.grid[11].filled = false;
     this.grid[12].filled = false;
     this.origin.setParent(scene);
-    this.canvas = canvas;
-    //this.canvas.addEventListener('pointerdown', (e) => this.pointerDown(e));
-    this.mouse = new Vec2();
-    this.raycast = raycast;
   }
   pointerDown(e) {
     this.mouse.set(2.0 * (e.x / this.renderer.width) - 1.0, 2.0 * (1.0 - e.y / this.renderer.height) - 1.0);
@@ -68,7 +60,8 @@ export class Terrain {
     const intersections = this.raycast.intersectMeshes(this.grid);
     if (intersections[0]) {intersections[0].visible = false}
   }
-  setupWalls() {
+  setupWalls(assets) {
+    this.walls = assets.walls;
     for (let y = 0; y < 10; y++) {
       for (let x = 0; x < 10; x++) {
         this.updateCell(x, y);
@@ -84,43 +77,17 @@ export class Terrain {
       cell.walls = [];
     }
     if (cell.filled) return;
-    //const neighbors = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-    // for (const direction of neighbors) {
-    //   const neighbor = this.grid[calcOffset(x + direction[0], y + direction[1])];
-    //   if (neighbor.filled) {
-    //     const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});
-    //     newWall.position = [x, 0, y];
-    //     newWall.setParent(this.scene);
-    //   }
-    // }
-    let offset = calcOffset(x, y + 1);
-    if (this.grid[offset] == undefined || this.grid[offset]?.filled) {
-      const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});
-      //newWall.position = [x - 4.5, 0, y - 4];
-      newWall.position = calcGridToWorld(x, 0, y + 0.5);
-      newWall.rotation.y = 0;
-      newWall.setParent(this.scene);
-    }
-    offset = calcOffset(x, y - 1);
-    if (this.grid[offset] == undefined || this.grid[offset]?.filled) {
-      const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});
-      newWall.position = calcGridToWorld(x, 0, y - 0.5);
-      newWall.rotation.y = Math.PI;
-      newWall.setParent(this.scene);
-    }
-    offset = calcOffset(x + 1, y);
-    if (this.grid[offset] == undefined || this.grid[offset]?.filled) {
-      const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});
-      newWall.position = calcGridToWorld(x + 0.5, 0, y);
-      newWall.rotation.y = 0.5 * Math.PI;
-      newWall.setParent(this.scene);
-    }
-    offset = calcOffset(x - 1, y);
-    if (this.grid[offset] == undefined || this.grid[offset]?.filled) {
-      const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});
-      newWall.position = calcGridToWorld(x - 0.5, 0, y);
-      newWall.rotation.y = 1.5 * Math.PI;
-      newWall.setParent(this.scene);
+    const neighbors = [[0, 1, 0], [0, -1, Math.PI], [1, 0, 0.5 * Math.PI], [-1, 0, 1.5 * Math.PI]];
+    for (const direction of neighbors) {
+      const neighbor = this.grid[calcOffset(x + direction[0], y + direction[1])];
+      if (neighbor == undefined || neighbor?.filled) {
+        const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});
+        // divided by 2, because calcGridToWorld centers the coordinates in the grid cell
+        // only 0.5 is needed to move the wall to its place
+        newWall.position = calcGridToWorld(x + (direction[0] / 2), 0, y + (direction[1] / 2));
+        newWall.rotation.y = direction[2];
+        newWall.setParent(this.scene);
+      }
     }
   }
 }

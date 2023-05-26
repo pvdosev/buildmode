@@ -6,7 +6,6 @@ const PLANE = {origin: new Vec3(0, 0, 0), normal: new Vec3(0, 1, 0)}
 
 export class EditMode {
   constructor({msgBus = msgBus,
-               assets = assets,
                raycast = raycast,
                scene = scene,
                camera = camera,
@@ -15,9 +14,8 @@ export class EditMode {
     this.state = STATE.EDIT;
     this.heldObject = null;
     this.gl = renderer.gl;
-    this.canvas = this.gl.canvas;
+    this.canvas = renderer.gl.canvas;
     this.msgBus = msgBus;
-    this.assets = assets.items;
     this.raycast = raycast;
     this.scene = scene;
     this.camera = camera;
@@ -25,12 +23,13 @@ export class EditMode {
     this.terrain = terrain;
     this.mouse = new Vec2();
     this.objectList = [];
-    this.msgBus.register("onAssetsLoaded", () => {this.setupAssets()});
+    this.msgBus.register("onAssetsLoaded", (assets) => {this.setupAssets(assets)});
     this.gridHelper = new GridHelper(this.gl);
     this.gridHelper.setParent(this.scene);
     this.registerCallbacks();
   }
-  setupAssets() {
+  setupAssets(assets) {
+    this.assets = assets.items;
     for (const assetId in this.assets) {
       makeButtonInList(this.assets[assetId].name, "buttonList", (event) => {
         if (this.heldObject) this.heldObject = undefined;
@@ -50,41 +49,46 @@ export class EditMode {
   }
 
   pointerDown(e) {
-    this.mouse.set(2.0 * (e.x / this.renderer.width) - 1.0, 2.0 * (1.0 - e.y / this.renderer.height) - 1.0);
-    this.raycast.castMouse(this.camera, this.mouse);
     switch ( this.state ) {
       case STATE.GRAB:
-        // calculates clipspace coords of pointer
-        const intersection = this.raycast.intersectPlane(PLANE);
-        if (intersection) {
-          console.log(intersection);
-          this.heldObject.position = intersection.clone();
-        }
-        this.state = STATE.EDIT;
-        this.objectList.push(this.heldObject);
-        this.heldObject = undefined;
+        this.heldObjectDrop(e);
         break;
       case STATE.EDIT:
-        const hits = this.raycast.intersectMeshes(this.objectList, {includeUV: false, includeNormal: false});
-        if (hits.length) {
-          this.heldObject = hits[0];
-          console.log(this.heldObject);
-          const objIndex = this.objectList.find((obj) => obj.id == hits[0].id);
-          if (objIndex > -1) {this.objectList.splice(objIndex, 1)}
-          this.state = STATE.GRAB;
-        }
+        this.heldObjectGrab(e);
     }
   }
+
   pointerMove(e) {
     if ( this.state == STATE.GRAB ) {
-      this.mouse.set(2.0 * (e.x / this.renderer.width) - 1.0, 2.0 * (1.0 - e.y / this.renderer.height) - 1.0);
-      this.raycast.castMouse(this.camera, this.mouse);
-      const intersection = this.raycast.intersectPlane(PLANE);
-      if (intersection) {
-        this.heldObject.position = intersection.clone();
-      }
+      this.heldObjectUpdate(e);
     }
   }
+
+  heldObjectUpdate(e) {
+    const intersection = this.raycast.intersectPlane(e, this.camera, PLANE);
+    if (intersection) {
+      this.heldObject.position = intersection.clone();
+    }
+  }
+  heldObjectDrop(e) {
+    this.heldObjectUpdate(e);
+    this.state = STATE.EDIT;
+    this.objectList.push(this.heldObject);
+    this.heldObject = undefined;
+  }
+
+  heldObjectGrab(e) {
+    const hits = this.raycast.intersectMeshes(
+      e, this.camera, this.objectList, {includeUV: false, includeNormal: false}
+    );
+    if (hits.length) {
+      this.heldObject = hits[0];
+      const objIndex = this.objectList.find((obj) => obj.id == hits[0].id);
+      if (objIndex > -1) {this.objectList.splice(objIndex, 1)}
+      this.state = STATE.GRAB;
+    }
+  }
+
   registerCallbacks() {
     this.canvas.addEventListener('pointerdown', (e) => this.pointerDown(e));
     this.canvas.addEventListener('pointermove', (e) => this.pointerMove(e));

@@ -1,9 +1,10 @@
 import { Renderer, Camera, Transform, Orbit, Program, Mesh, Sphere,
-         GLTFLoader, BasisManager, Texture, Box, Raycast, Vec2, Vec3 } from './ogl/src/index.mjs';
+         GLTFLoader, BasisManager, Texture, Box, Vec2, Vec3 } from './ogl/src/index.mjs';
 import {SkyBox} from './skybox.js';
 import {MessageBus} from './abstract.js';
 import {EditMode} from './editmode.js';
 import {Terrain} from './terrain.js';
+import {RaycastHelper} from './rayhelp.js';
 
 function shallowClone(obj) {
     return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
@@ -33,7 +34,7 @@ function init() {
 
     const assets = {items: {}, walls: {}};
     const scene = new Transform();
-    const raycast = new Raycast(gl);
+    const raycast = new RaycastHelper(renderer);
     loadAssets();
 
     const msgBus = new MessageBus();
@@ -87,8 +88,7 @@ function init() {
         `,
         uniforms: {view: view},
     });
-    const context = {gl: gl, scene: scene, canvas: canvasElem, raycast: raycast,
-                     renderer: renderer, camera: camera, assets: assets, msgBus: msgBus};
+    const context = {scene: scene, raycast: raycast, renderer: renderer, camera: camera, msgBus: msgBus}
     const terrain = new Terrain(context);
     const editMode = new EditMode(context, terrain);
 
@@ -109,7 +109,7 @@ function init() {
 
         const skybox = new SkyBox(gl);
         skybox.setParent(scene);
-        msgBus.send("onAssetsLoaded");
+        msgBus.send("onAssetsLoaded", assets);
     }
 
     requestAnimationFrame(update);
