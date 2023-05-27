@@ -20,14 +20,17 @@ export class EditMode {
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
-    this.terrain = terrain;
     this.mouse = new Vec2();
     this.objectList = [];
-    this.msgBus.register("onAssetsLoaded", (assets) => {this.setupAssets(assets)});
-    this.gridHelper = new GridHelper(this.gl);
+    this.terrain = terrain;
+    this.raycast.createList("terrainCells", "BOUNDS");
+    for (const cell of terrain.grid) {this.raycast.addObject(cell, "terrainCells")}
+    this.gridHelper = new GridHelper(this.gl, {size: 100, divisions: 100});
     this.gridHelper.setParent(this.scene);
+    this.msgBus.register("onAssetsLoaded", (assets) => {this.setupAssets(assets)});
     this.registerCallbacks();
   }
+
   setupAssets(assets) {
     this.assets = assets.items;
     for (const assetId in this.assets) {
@@ -76,9 +79,10 @@ export class EditMode {
   }
 
   terrainDestroy(e) {
-    const hits = this.raycast.intersectBounds(e, this.camera, this.terrain.grid);
+    const hits = this.raycast.intersectList(e, this.camera, "terrainCells");
     if (hits[0]) {
       hits[0].filled = false;
+      this.raycast.removeObject(hits[0], "terrainCells");
       this.terrain.updateCellNeighbors(hits[0].x, hits[0].y);
     }
   }
@@ -102,7 +106,7 @@ export class EditMode {
     );
     if (hits.length) {
       this.heldObject = hits[0];
-      const objIndex = this.objectList.find((obj) => obj.id == hits[0].id);
+      const objIndex = this.objectList.indexOf(hits[0]);
       if (objIndex > -1) {this.objectList.splice(objIndex, 1)}
       this.state = STATE.GRAB;
     }

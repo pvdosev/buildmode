@@ -1,9 +1,10 @@
 import {Program, Transform, Mesh, Box, Plane, Vec2} from './ogl/src/index.mjs';
 
-const GRID_X = 10;
-const GRID_Y = 10;
+const GRID_X = 100;
+const GRID_Y = 100;
 const GRID_OFFSET_X = GRID_X / 2 - 0.5;
 const GRID_OFFSET_Y = GRID_X / 2 - 0.5;
+
 function calcOffset(x, y) {
   return y * GRID_X + x;
 }
@@ -18,7 +19,7 @@ function withinBounds(x, y) {
 const NEIGHBORS = [[0, 1, 0], [0, -1, Math.PI], [1, 0, 0.5 * Math.PI], [-1, 0, 1.5 * Math.PI]];
 
 export class Terrain {
-  constructor({scene = scene, renderer = renderer, msgBus = msgBus}) {
+  constructor({scene = scene, renderer = renderer, msgBus = msgBus, raycast = raycast}) {
     msgBus.register("onAssetsLoaded", (assets)=>{this.setupWalls(assets)});
     this.gl = renderer.gl;
     this.scene = scene;
@@ -51,13 +52,15 @@ export class Terrain {
       for (let x = 0; x < GRID_X; x++) {
         const min = calcGridToWorld(x - 0.5, 0, y - 0.5);
         const max = calcGridToWorld(x + 0.5, 2, y + 0.5);
-        this.grid.push({walls: [], filled: true, x: x, y: y, bounds: {
+        // the id is there for raycast lists. it is not globally unique
+        this.grid.push({walls: [], filled: true, x: x, y: y, id: calcOffset(x, y), bounds: {
           min: {x: min[0], y: min[1], z: min[2]},
           max: {x: max[0], y: max[1], z: max[2]},
         }});
       }
     }
     this.origin.setParent(scene);
+    msgBus.send("onTerrainLoaded", this);
   }
   setupWalls(assets) {
     this.walls = assets.walls;

@@ -7,6 +7,36 @@ export class RaycastHelper {
   constructor(renderer) {
     this.renderer = renderer;
     this.raycast = new Raycast(renderer.gl);
+    this.intersectLists = {};
+    this.intersectionTypes = {
+      BOUNDS: this.intersectBounds.bind(this),
+      MESHES: this.intersectMeshes.bind(this),
+    };
+  }
+
+  createList(list, type) {
+    this.intersectLists[list] = {
+      func: this.intersectionTypes[type],
+      array: [],
+    };
+  }
+  intersectList(e, camera, list) {
+    return this.intersectLists[list].func(
+      e, camera, this.intersectLists[list].array
+    );
+  }
+
+  addObject(object, list) {
+    if (this.intersectLists[list]) {
+      this.intersectLists[list].array.push(object);
+    } else {console.warn("Intersection list doesn't exist!")}
+  }
+
+  removeObject(object, list) {
+    if (this.intersectLists[list]) {
+      const objIndex = this.intersectLists[list].array.indexOf(object);
+      if (objIndex > -1) {this.intersectLists[list].array.splice(objIndex, 1)}
+    } else {console.warn("Intersection list doesn't exist!")}
   }
 
   castMouseRay(e, camera) {
