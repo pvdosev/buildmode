@@ -1,10 +1,18 @@
 import {Program, Transform, Mesh, Box, Plane, Vec2} from './ogl/src/index.mjs';
 
+const GRID_X = 10;
+const GRID_Y = 10;
+const GRID_OFFSET_X = GRID_X / 2 - 0.5;
+const GRID_OFFSET_Y = GRID_X / 2 - 0.5;
 function calcOffset(x, y) {
-  return y * 10 + x;
+  return y * GRID_X + x;
 }
 function calcGridToWorld(x, y, z) {
-  return [x - 4.5, y, z - 4.5];
+  return [x - GRID_OFFSET_X, y, z - GRID_OFFSET_Y];
+}
+function withinBounds(x, y) {
+  if (x >= 0 && x < GRID_X && y >= 0 && y < GRID_Y) return true;
+  else return false;
 }
 
 const NEIGHBORS = [[0, 1, 0], [0, -1, Math.PI], [1, 0, 0.5 * Math.PI], [-1, 0, 1.5 * Math.PI]];
@@ -39,8 +47,8 @@ export class Terrain {
     });
     this.grid = [];
     this.origin = new Transform();
-    for (let y = 0; y < 10; y++) {
-      for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < GRID_Y; y++) {
+      for (let x = 0; x < GRID_X; x++) {
         const min = calcGridToWorld(x - 0.5, 0, y - 0.5);
         const max = calcGridToWorld(x + 0.5, 2, y + 0.5);
         this.grid.push({walls: [], filled: true, x: x, y: y, bounds: {
@@ -51,16 +59,10 @@ export class Terrain {
     }
     this.origin.setParent(scene);
   }
-  pointerDown(e) {
-    this.mouse.set(2.0 * (e.x / this.renderer.width) - 1.0, 2.0 * (1.0 - e.y / this.renderer.height) - 1.0);
-    this.raycast.castMouse(this.camera, this.mouse);
-    const intersections = this.raycast.intersectMeshes(this.grid);
-    if (intersections[0]) {intersections[0].visible = false}
-  }
   setupWalls(assets) {
     this.walls = assets.walls;
-    for (let y = 0; y < 10; y++) {
-      for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < GRID_Y; y++) {
+      for (let x = 0; x < GRID_X; x++) {
         this.updateCell(x, y);
       }
     }
@@ -73,7 +75,7 @@ export class Terrain {
   }
   updateCell(x, y) {
     const cell = this.grid[calcOffset(x, y)];
-    if (!cell) return;
+    if (!withinBounds(x, y)) return;
     if (cell.walls.length > 0) {
       for (const wall of cell.walls) {
         wall.setParent(null);
@@ -83,7 +85,7 @@ export class Terrain {
     if (cell.filled) return;
     for (const direction of NEIGHBORS) {
       const neighbor = this.grid[calcOffset(x + direction[0], y + direction[1])];
-      if (neighbor == undefined || neighbor?.filled) {
+      if (!withinBounds(x + direction[0], y + direction[1]) || neighbor?.filled) {
         const newWall = new Mesh(this.gl, {geometry: this.walls["1"].geometry, program: this.program});
         // divided by 2, because calcGridToWorld centers the coordinates in the grid cell
         // only 0.5 is needed to move the wall to its place

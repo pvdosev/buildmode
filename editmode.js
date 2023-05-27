@@ -43,8 +43,8 @@ export class EditMode {
       if (this.heldObject) {
         this.heldObject.setParent(null);
         this.heldObject = undefined;
-        this.state = STATE.EDIT;
       }
+        this.state = STATE.EDIT;
     });
     makeButtonInList("Edit Terrain", "buttonList", () => {
       if (this.heldObject) {

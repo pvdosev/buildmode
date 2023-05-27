@@ -1,9 +1,7 @@
 import {Vec3, Raycast} from './ogl/src/index.mjs';
 
 // ogl has a raycast class, but using it directly is annoying
-// since it's written not to know about the gl context and canvas
-// but we need that information to do the actual raycasting (see castMouseRay)
-// so this is a kinda ugly compromise
+// this helps us track extra information about raycasting
 
 export class RaycastHelper {
   constructor(renderer) {
