@@ -1,4 +1,4 @@
-import {Vec3, Raycast} from './ogl/src/index.mjs';
+import {Vec3, Raycast} from 'ogl';
 
 // ogl has a raycast class, but using it directly is annoying
 // this helps us track extra information about raycasting

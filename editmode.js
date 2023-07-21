@@ -1,4 +1,4 @@
-import { Vec2, Vec3, Mesh, GridHelper } from './ogl/src/index.mjs';
+import { Vec2, Vec3, Mesh, GridHelper } from 'ogl';
 import {makeButtonInList} from './ui.js';
 
 const STATE = {EDIT: 0, GRAB: 1, TERRAIN_EDIT: 2, DISABLED: -1}

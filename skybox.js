@@ -1,4 +1,4 @@
-import { Program, Mesh, Texture, Box } from './ogl/src/index.mjs';
+import { Program, Mesh, Texture, Box } from 'ogl';
 
 export class SkyBox extends Mesh {
     constructor(gl, imgArray) {

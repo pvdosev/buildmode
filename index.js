@@ -1,10 +1,11 @@
 import { Renderer, Camera, Transform, Orbit, Program, Mesh, Sphere,
-         GLTFLoader, BasisManager, Texture, Box, Vec2, Vec3 } from './ogl/src/index.mjs';
+         GLTFLoader, BasisManager, Texture, Box, Vec2, Vec3 } from 'ogl';
 import {SkyBox} from './skybox.js';
 import {MessageBus} from './abstract.js';
 import {EditMode} from './editmode.js';
 import {Terrain} from './terrain.js';
 import {RaycastHelper} from './rayhelp.js';
+import * as RAPIER from '@dimforge/rapier3d';
 
 function shallowClone(obj) {
     return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));

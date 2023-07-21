@@ -1,4 +1,4 @@
-import {Program, Transform, Mesh, Box, Plane, Vec2} from './ogl/src/index.mjs';
+import {Program, Transform, Mesh, Box, Plane, Vec2} from 'ogl';
 
 const GRID_X = 100;
 const GRID_Y = 100;
